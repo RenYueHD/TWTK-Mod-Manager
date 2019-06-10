@@ -34,6 +34,8 @@
             this.文件ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadRoot = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiReload = new System.Windows.Forms.ToolStripMenuItem();
+            this.选项ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.tsmiCheckLine = new System.Windows.Forms.ToolStripMenuItem();
             this.listMods = new System.Windows.Forms.ListBox();
             this.listTables = new System.Windows.Forms.ListBox();
             this.menuStrip1.SuspendLayout();
@@ -42,7 +44,8 @@
             // menuStrip1
             // 
             this.menuStrip1.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.文件ToolStripMenuItem});
+            this.文件ToolStripMenuItem,
+            this.选项ToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
             this.menuStrip1.Size = new System.Drawing.Size(1071, 25);
@@ -71,6 +74,22 @@
             this.tsmiReload.Size = new System.Drawing.Size(150, 22);
             this.tsmiReload.Text = "重新加载";
             this.tsmiReload.Click += new System.EventHandler(this.tsmiReload_Click);
+            // 
+            // 选项ToolStripMenuItem
+            // 
+            this.选项ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.tsmiCheckLine});
+            this.选项ToolStripMenuItem.Name = "选项ToolStripMenuItem";
+            this.选项ToolStripMenuItem.Size = new System.Drawing.Size(44, 21);
+            this.选项ToolStripMenuItem.Text = "选项";
+            // 
+            // tsmiCheckLine
+            // 
+            this.tsmiCheckLine.CheckOnClick = true;
+            this.tsmiCheckLine.Name = "tsmiCheckLine";
+            this.tsmiCheckLine.Size = new System.Drawing.Size(152, 22);
+            this.tsmiCheckLine.Text = "显示词条重复";
+            this.tsmiCheckLine.CheckedChanged += new System.EventHandler(this.tsmiCheckLine_CheckedChanged);
             // 
             // listMods
             // 
@@ -112,8 +131,7 @@
             this.MinimumSize = new System.Drawing.Size(800, 600);
             this.Name = "FrmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Mod管理器 v0.3 - Power by RenYueHD";
-            this.FormClosed += new System.Windows.Forms.FormClosedEventHandler(this.FrmMain_FormClosed);
+            this.Text = "Mod管理器 v0.4 - Power by RenYueHD";
             this.Load += new System.EventHandler(this.FrmMain_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -130,6 +148,8 @@
         private System.Windows.Forms.ListBox listMods;
         private System.Windows.Forms.ListBox listTables;
         private System.Windows.Forms.ToolStripMenuItem tsmiReload;
+        private System.Windows.Forms.ToolStripMenuItem 选项ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem tsmiCheckLine;
     }
 }
 

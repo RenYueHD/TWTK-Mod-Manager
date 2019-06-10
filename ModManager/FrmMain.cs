@@ -44,6 +44,14 @@ namespace ModManager
             watcher.IncludeSubdirectories = false;
 
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["checkField"] != null)
+            {
+                tsmiCheckLine.Checked = config.AppSettings.Settings["checkField"].Value != "0";
+            }
+            else
+            {
+                tsmiCheckLine.Checked = true;
+            }
             if (config.AppSettings.Settings["path"] != null)
             {
                 loadDir(config.AppSettings.Settings["path"].Value);
@@ -88,6 +96,7 @@ namespace ModManager
                 tableFile.Clear();
                 fileTables.Clear();
                 listMods.Items.Clear();
+                listTables.Items.Clear();
                 fileFields.Clear();
                 fieldFiles.Clear();
 
@@ -133,23 +142,26 @@ namespace ModManager
                         List<string> list = tableFile[p.FullPath];
                         list.Add(file.FullName);
 
-                        //填充文件-词条数据
-                        List<ModLine> lines = ReadPackedField(p, file.FullName);
+                        if (tsmiCheckLine.Checked)
+                        {
+                            //填充文件-词条数据
+                            List<ModLine> lines = ReadPackedField(p, file.FullName);
 
-                        List<ModLine> fields = fileFields[file.FullName];
-                        fields.AddRange(lines);
+                            List<ModLine> fields = fileFields[file.FullName];
+                            fields.AddRange(lines);
 
-                        //填充词条-文件数据
-                        lines.ForEach(line =>
-                            {
-                                string key = line.TableName + "." + string.Join(".", line.FieldKeyValue);
-                                if (!fieldFiles.ContainsKey(key))
+                            //填充词条-文件数据
+                            lines.ForEach(line =>
                                 {
-                                    fieldFiles[key] = new List<string>();
-                                }
-                                List<string> fs = fieldFiles[key];
-                                fs.Add(file.FullName);
-                            });
+                                    string key = line.TableName + "." + string.Join(".", line.FieldKeyValue);
+                                    if (!fieldFiles.ContainsKey(key))
+                                    {
+                                        fieldFiles[key] = new List<string>();
+                                    }
+                                    List<string> fs = fieldFiles[key];
+                                    fs.Add(file.FullName);
+                                });
+                        }
                     });
                 });
 
@@ -163,23 +175,25 @@ namespace ModManager
                     //判断是否冲突
                     foreach (string table in fileTables[file.FullName])
                     {
-                        if (tableFile[table].Count > 1)
+                        if (tableFile[table].Count(p => p != file.FullName) > 0)
                         {
                             mod.ConflictTable = true;
                             break;
                         }
                     }
-                    //如果目录无冲突,则判断词条冲突情况
-                    List<ModLine> lines = fileFields[mod.FileName];
-                    foreach (ModLine l in lines)
+                    if (tsmiCheckLine.Checked)
                     {
-                        if (fieldFiles[l.TableName + "." + string.Join(".", l.FieldKeyValue)].Count > 1)
+                        //如果目录无冲突,则判断词条冲突情况
+                        List<ModLine> lines = fileFields[mod.FileName];
+                        foreach (ModLine l in lines)
                         {
-                            mod.ConflictField = true;
-                            break;
+                            if (fieldFiles[l.TableName + "." + string.Join(".", l.FieldKeyValue)].Count(p => p != file.FullName) > 0)
+                            {
+                                mod.ConflictField = true;
+                                break;
+                            }
                         }
                     }
-
 
                     listMods.Items.Add(mod);
                 }
@@ -273,7 +287,7 @@ namespace ModManager
                 }
                 else if (file.ConflictField)
                 {
-                    mybsh = Brushes.Brown;
+                    mybsh = Brushes.Orange;
                 }
 
                 //文本 
@@ -362,7 +376,7 @@ namespace ModManager
                     }
                     else if (con.ConflictType == ConflictType.KEY)
                     {
-                        e.Graphics.DrawString("与文件 " + Path.GetFileName(con.ConflictFile) + " 冲突词条 " + string.Join(" | ", con.FieldValue), e.Font, Brushes.Brown, e.Bounds, StringFormat.GenericDefault);
+                        e.Graphics.DrawString("与文件 " + Path.GetFileName(con.ConflictFile) + " 重复词条 " + string.Join(" | ", con.FieldValue), e.Font, Brushes.Orange, e.Bounds, StringFormat.GenericDefault);
                     }
                 }
                 else if (con != null)
@@ -385,9 +399,22 @@ namespace ModManager
             }
         }
 
-        private void FrmMain_FormClosed(object sender, FormClosedEventArgs e)
+        private void tsmiCheckLine_CheckedChanged(object sender, EventArgs e)
         {
-
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["checkField"] != null)
+            {
+                config.AppSettings.Settings["checkField"].Value = (tsmiCheckLine.Checked ? "1" : "0");
+            }
+            else
+            {
+                config.AppSettings.Settings.Add("checkField", tsmiCheckLine.Checked ? "1" : "0");
+            }
+            config.Save();
+            if (currentDir != null)
+            {
+                loadDir(currentDir);
+            }
         }
     }
 }

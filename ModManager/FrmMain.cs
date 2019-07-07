@@ -20,8 +20,12 @@ namespace ModManager
             InitializeComponent();
         }
 
+        //当前Data文件夹
         private string currentDir;
+        //创意工坊文件夹
+        private string workshopDir;
         FileSystemWatcher watcher = new FileSystemWatcher();
+        FileSystemWatcher workshopWatcher = new FileSystemWatcher();
 
         //记录所有表对应文件 <表,表所在文件列表>
         Dictionary<string, List<string>> tableFile = new Dictionary<string, List<string>>();
@@ -43,6 +47,13 @@ namespace ModManager
             watcher.Deleted += Watcher_Event;
             watcher.IncludeSubdirectories = false;
 
+            workshopWatcher.Filter = "*.pack";
+            workshopWatcher.Renamed += Watcher_Event;
+            workshopWatcher.Changed += Watcher_Event;
+            workshopWatcher.Created += Watcher_Event;
+            workshopWatcher.Deleted += Watcher_Event;
+            workshopWatcher.IncludeSubdirectories = true;
+
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             if (config.AppSettings.Settings["checkField"] != null)
             {
@@ -54,15 +65,25 @@ namespace ModManager
             }
             if (config.AppSettings.Settings["path"] != null)
             {
-                loadDir(config.AppSettings.Settings["path"].Value);
+                this.currentDir = config.AppSettings.Settings["path"].Value;
+
+                if (config.AppSettings.Settings["workshop"] != null)
+                {
+                    this.workshopDir = config.AppSettings.Settings["workshop"].Value;
+                }
+                else
+                {
+                    this.workshopDir = null;
+                }
             }
+            loadDir();
         }
 
         private void Watcher_Event(object sender, FileSystemEventArgs e)
         {
             Action d = () =>
             {
-                loadDir(currentDir);
+                loadDir();
             };
             this.Invoke(d);
         }
@@ -85,14 +106,54 @@ namespace ModManager
                 config.AppSettings.Settings["path"].Value = dialog.SelectedPath;
                 config.Save();
 
-                loadDir(dialog.SelectedPath);
+                this.currentDir = dialog.SelectedPath;
+
+                loadDir();
             }
         }
 
-        private void loadDir(string dir)
+
+        private void tsmiWorkshop_Click(object sender, EventArgs e)
+        {
+            FolderBrowserDialog dialog = new FolderBrowserDialog();
+            dialog.Description = "设置到steamapps目录即可";
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["workshop"] != null)
+            {
+                dialog.SelectedPath = config.AppSettings.Settings["workshop"].Value;
+            }
+
+            if (dialog.ShowDialog() == DialogResult.OK)
+            {
+                if (dialog.SelectedPath.EndsWith("steamapps"))
+                {
+
+                    if (config.AppSettings.Settings["workshop"] == null)
+                    {
+                        config.AppSettings.Settings.Add("workshop", null);
+                    }
+                    config.AppSettings.Settings["workshop"].Value = dialog.SelectedPath;
+                    config.Save();
+
+                    this.workshopDir = dialog.SelectedPath;
+
+                    loadDir();
+                }
+                else
+                {
+                    MessageBox.Show("您必须选择steamapps目录", "目录错误", MessageBoxButtons.OK, MessageBoxIcon.Warning);
+                }
+            }
+        }
+
+        private void loadDir()
         {
             lock (this)
             {
+                if (currentDir == null || currentDir.Length == 0)
+                {
+                    return;
+                }
                 tableFile.Clear();
                 fileTables.Clear();
                 listMods.Items.Clear();
@@ -101,13 +162,23 @@ namespace ModManager
                 fieldFiles.Clear();
 
                 //读取所有pack文件
-                List<FileInfo> files = new DirectoryInfo(dir).GetFiles("*.pack").ToList();
+                List<FileInfo> files = new DirectoryInfo(currentDir).GetFiles("*.pack").ToList();
+
+                //加载创意工坊pack文件
+                if (workshopDir != null && workshopDir.Length > 0)
+                {
+                    string tmp = workshopDir + @"\workshop\content\779340";
+                    foreach (DirectoryInfo dir in new DirectoryInfo(tmp).GetDirectories())
+                    {
+                        files.AddRange(dir.GetFiles("*.pack").ToList()); ;
+                    }
+                }
 
                 //文件排除列表
                 List<string> exp = new List<string>();
 
                 //读取manifest.txt文件筛选系统mod
-                string[] mainfests = Directory.GetFiles(dir, "manifest.txt");
+                string[] mainfests = Directory.GetFiles(currentDir, "manifest.txt");
                 if (mainfests.Length > 0)
                 {
                     using (StreamReader sr = new StreamReader(mainfests[0]))
@@ -198,10 +269,15 @@ namespace ModManager
                     listMods.Items.Add(mod);
                 }
 
-                currentDir = dir;
-
-                watcher.Path = dir;
+                watcher.Path = currentDir;
                 watcher.EnableRaisingEvents = true;
+
+                if (workshopDir != null && workshopDir.Length > 0)
+                {
+                    string tmp = workshopDir + @"\workshop\content\779340";
+                    workshopWatcher.Path = tmp;
+                    workshopWatcher.EnableRaisingEvents = true;
+                }
             }
         }
 
@@ -302,6 +378,10 @@ namespace ModManager
             if (listMods.SelectedIndex >= 0)
             {
                 ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
+
+                listTables.Items.Add("文件:   " + mod.FileName);
+                listTables.Items.Add("");
+
                 //展示所有冲突的目录
                 fileTables[mod.FileName].ForEach(table =>
                 {
@@ -324,9 +404,9 @@ namespace ModManager
                         });
                         conf = true;
                     }
-                    //查看词条冲突情况
-                    fileFields[mod.FileName].Where(p => p.TableName == DBFile.Typename(table)).ToList().ForEach(p =>
-                    {
+                        //查看词条冲突情况
+                        fileFields[mod.FileName].Where(p => p.TableName == DBFile.Typename(table)).ToList().ForEach(p =>
+                            {
                         List<string> files = fieldFiles[p.TableName + "." + string.Join(".", p.FieldKeyValue)]
                         .Where(q => q != mod.FileName).ToList();
                         if (files.Count > 0)
@@ -395,7 +475,7 @@ namespace ModManager
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             if (config.AppSettings.Settings["path"] != null)
             {
-                loadDir(config.AppSettings.Settings["path"].Value);
+                loadDir();
             }
         }
 
@@ -411,10 +491,10 @@ namespace ModManager
                 config.AppSettings.Settings.Add("checkField", tsmiCheckLine.Checked ? "1" : "0");
             }
             config.Save();
-            if (currentDir != null)
-            {
-                loadDir(currentDir);
-            }
+
+            loadDir();
+
         }
+
     }
 }

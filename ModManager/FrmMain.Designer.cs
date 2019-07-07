@@ -36,6 +36,7 @@
             this.tsmiReload = new System.Windows.Forms.ToolStripMenuItem();
             this.选项ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiCheckLine = new System.Windows.Forms.ToolStripMenuItem();
+            this.tsmiWorkshop = new System.Windows.Forms.ToolStripMenuItem();
             this.listMods = new System.Windows.Forms.ListBox();
             this.listTables = new System.Windows.Forms.ListBox();
             this.menuStrip1.SuspendLayout();
@@ -78,7 +79,8 @@
             // 选项ToolStripMenuItem
             // 
             this.选项ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
-            this.tsmiCheckLine});
+            this.tsmiCheckLine,
+            this.tsmiWorkshop});
             this.选项ToolStripMenuItem.Name = "选项ToolStripMenuItem";
             this.选项ToolStripMenuItem.Size = new System.Drawing.Size(44, 21);
             this.选项ToolStripMenuItem.Text = "选项";
@@ -87,9 +89,16 @@
             // 
             this.tsmiCheckLine.CheckOnClick = true;
             this.tsmiCheckLine.Name = "tsmiCheckLine";
-            this.tsmiCheckLine.Size = new System.Drawing.Size(152, 22);
+            this.tsmiCheckLine.Size = new System.Drawing.Size(172, 22);
             this.tsmiCheckLine.Text = "显示词条重复";
             this.tsmiCheckLine.CheckedChanged += new System.EventHandler(this.tsmiCheckLine_CheckedChanged);
+            // 
+            // tsmiWorkshop
+            // 
+            this.tsmiWorkshop.Name = "tsmiWorkshop";
+            this.tsmiWorkshop.Size = new System.Drawing.Size(172, 22);
+            this.tsmiWorkshop.Text = "设置创意工坊目录";
+            this.tsmiWorkshop.Click += new System.EventHandler(this.tsmiWorkshop_Click);
             // 
             // listMods
             // 
@@ -131,7 +140,7 @@
             this.MinimumSize = new System.Drawing.Size(800, 600);
             this.Name = "FrmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Mod管理器 v0.4 - Power by RenYueHD";
+            this.Text = "Mod管理器 v0.5 - Power by RenYueHD";
             this.Load += new System.EventHandler(this.FrmMain_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
@@ -150,6 +159,7 @@
         private System.Windows.Forms.ToolStripMenuItem tsmiReload;
         private System.Windows.Forms.ToolStripMenuItem 选项ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem tsmiCheckLine;
+        private System.Windows.Forms.ToolStripMenuItem tsmiWorkshop;
     }
 }
 

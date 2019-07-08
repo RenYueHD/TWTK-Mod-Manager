@@ -5,9 +5,11 @@ using System.Collections.Generic;
 using System.ComponentModel;
 using System.Configuration;
 using System.Data;
+using System.Diagnostics;
 using System.Drawing;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Text;
 using System.Windows.Forms;
 
@@ -15,6 +17,16 @@ namespace ModManager
 {
     public partial class FrmMain : Form
     {
+
+        [DllImport("shell32.dll", ExactSpelling = true)]
+        private static extern void ILFree(IntPtr pidlList);
+
+        [DllImport("shell32.dll", CharSet = CharSet.Unicode, ExactSpelling = true)]
+        private static extern IntPtr ILCreateFromPathW(string pszPath);
+
+        [DllImport("shell32.dll", ExactSpelling = true)]
+        private static extern int SHOpenFolderAndSelectItems(IntPtr pidlList, uint cild, IntPtr children, uint dwFlags);
+
         public FrmMain()
         {
             InitializeComponent();
@@ -24,6 +36,11 @@ namespace ModManager
         private string currentDir;
         //创意工坊文件夹
         private string workshopDir;
+        //PFM文件位置
+        private string pfmFile;
+        //RPFM文件位置
+        private string rpfmFile;
+
         FileSystemWatcher watcher = new FileSystemWatcher();
         FileSystemWatcher workshopWatcher = new FileSystemWatcher();
 
@@ -55,6 +72,14 @@ namespace ModManager
             workshopWatcher.IncludeSubdirectories = true;
 
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["pfm"] != null)
+            {
+                this.pfmFile = config.AppSettings.Settings["pfm"].Value;
+            }
+            if (config.AppSettings.Settings["rpfm"] != null)
+            {
+                this.rpfmFile = config.AppSettings.Settings["rpfm"].Value;
+            }
             if (config.AppSettings.Settings["checkField"] != null)
             {
                 tsmiCheckLine.Checked = config.AppSettings.Settings["checkField"].Value != "0";
@@ -404,27 +429,27 @@ namespace ModManager
                         });
                         conf = true;
                     }
-                        //查看词条冲突情况
-                        fileFields[mod.FileName].Where(p => p.TableName == DBFile.Typename(table)).ToList().ForEach(p =>
-                            {
-                        List<string> files = fieldFiles[p.TableName + "." + string.Join(".", p.FieldKeyValue)]
-                        .Where(q => q != mod.FileName).ToList();
-                        if (files.Count > 0)
+                    //查看词条冲突情况
+                    fileFields[mod.FileName].Where(p => p.TableName == DBFile.Typename(table)).ToList().ForEach(p =>
                         {
-                            files.ForEach(q =>
+                            List<string> files = fieldFiles[p.TableName + "." + string.Join(".", p.FieldKeyValue)]
+                                .Where(q => q != mod.FileName).ToList();
+                            if (files.Count > 0)
                             {
-                                ConflictInfo c = new ConflictInfo();
-                                c.File = mod.FileName;
-                                c.Table = table;
-                                c.ConflictType = ConflictType.KEY;
-                                c.ConflictFile = q;
-                                c.FieldValue = p.FieldKeyValue;
-                                c.FieldName = p.FieldKeyName;
-                                listTables.Items.Add(c);
-                            });
-                            conf = true;
-                        }
-                    });
+                                files.ForEach(q =>
+                                    {
+                                        ConflictInfo c = new ConflictInfo();
+                                        c.File = mod.FileName;
+                                        c.Table = table;
+                                        c.ConflictType = ConflictType.KEY;
+                                        c.ConflictFile = q;
+                                        c.FieldValue = p.FieldKeyValue;
+                                        c.FieldName = p.FieldKeyName;
+                                        listTables.Items.Add(c);
+                                    });
+                                conf = true;
+                            }
+                        });
                     if (!conf)
                     {
                         ConflictInfo con = new ConflictInfo();
@@ -496,5 +521,251 @@ namespace ModManager
 
         }
 
+        private void listMods_DoubleClick(object sender, EventArgs e)
+        {
+            if (listMods.SelectedIndex >= 0)
+            {
+                ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
+                ExplorerFile(mod.FileName);
+            }
+        }
+
+        private void listMods_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+
+                int index = listMods.IndexFromPoint(e.Location);
+                if (index >= 0)
+                {
+                    listMods.SelectedIndex = index;
+
+                    ctxLeft.Show(listMods, e.Location);
+                }
+            }
+        }
+
+        private void pFMToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listMods.SelectedIndex >= 0)
+            {
+                if (pfmFile != null && pfmFile.Length > 0)
+                {
+                    ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
+                    Process.Start(pfmFile, "\"" + mod.FileName + "\"");
+                }
+                else
+                {
+                    MessageBox.Show("请设置PFM的路径");
+                }
+            }
+        }
+
+        private void 用RPFM打开ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listMods.SelectedIndex >= 0)
+            {
+                if (rpfmFile != null && rpfmFile.Length > 0)
+                {
+                    ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
+                    Process.Start(rpfmFile, "\"" + mod.FileName + "\"");
+                }
+                else
+                {
+                    MessageBox.Show("请设置RPFM的路径");
+                }
+            }
+        }
+
+        private void 打开文件夹ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listMods.SelectedIndex >= 0)
+            {
+                ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
+                ExplorerFile(mod.FileName);
+            }
+        }
+
+
+
+        private void 设置PFM路径ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+
+            dialog.Filter = "可执行文件|*.exe";
+
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["pfm"] != null)
+            {
+                dialog.FileName = config.AppSettings.Settings["pfm"].Value;
+            }
+            DialogResult result = dialog.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+
+                if (config.AppSettings.Settings["pfm"] == null)
+                {
+                    config.AppSettings.Settings.Add("pfm", null);
+                }
+                config.AppSettings.Settings["pfm"].Value = dialog.FileName;
+                config.Save();
+
+                this.pfmFile = dialog.FileName;
+            }
+        }
+
+        private void 设置RPFM路径ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            OpenFileDialog dialog = new OpenFileDialog();
+
+            dialog.Filter = "可执行文件|*.exe";
+
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["rpfm"] != null)
+            {
+                dialog.FileName = config.AppSettings.Settings["rpfm"].Value;
+            }
+            DialogResult result = dialog.ShowDialog();
+            if (result == DialogResult.OK)
+            {
+
+                if (config.AppSettings.Settings["rpfm"] == null)
+                {
+                    config.AppSettings.Settings.Add("rpfm", null);
+                }
+                config.AppSettings.Settings["rpfm"].Value = dialog.FileName;
+                config.Save();
+
+                this.rpfmFile = dialog.FileName;
+            }
+        }
+
+
+
+
+
+
+
+        public static void ExplorerFile(string filePath)
+        {
+            if (!File.Exists(filePath) && !Directory.Exists(filePath))
+                return;
+
+            if (Directory.Exists(filePath))
+            {
+                Process.Start(@"explorer.exe", "/select,\"" + filePath + "\"");
+            }
+            else
+            {
+                IntPtr pidlList = ILCreateFromPathW(filePath);
+                if (pidlList != IntPtr.Zero)
+                {
+                    try
+                    {
+                        Marshal.ThrowExceptionForHR(SHOpenFolderAndSelectItems(pidlList, 0, IntPtr.Zero, 0));
+                    }
+                    finally
+                    {
+                        ILFree(pidlList);
+                    }
+                }
+            }
+        }
+
+        private void listTables_DoubleClick(object sender, EventArgs e)
+        {
+            if (listTables.SelectedIndex >= 0)
+            {
+                ConflictInfo con = listTables.Items[listTables.SelectedIndex] as ConflictInfo;
+                if (con != null && con.ConflictFile != null)
+                {
+                    ExplorerFile(con.ConflictFile);
+                }
+                else if (con != null && con.File != null)
+                {
+                    ExplorerFile(con.File);
+                }
+            }
+        }
+
+        private void listTables_MouseDown(object sender, MouseEventArgs e)
+        {
+            if (e.Button == MouseButtons.Right)
+            {
+
+                int index = listTables.IndexFromPoint(e.Location);
+                if (index >= 0)
+                {
+                    listTables.SelectedIndex = index;
+                    ConflictInfo mod = listTables.Items[listTables.SelectedIndex] as ConflictInfo;
+                    if (mod != null)
+                    {
+                        ctxRight.Show(listTables, e.Location);
+                    }
+                }
+            }
+        }
+
+        private void 用PFM打开ToolStripMenuItem_Click(object sender, EventArgs e)
+        {
+            if (listTables.SelectedIndex >= 0)
+            {
+                if (pfmFile != null && pfmFile.Length > 0)
+                {
+                    ConflictInfo mod = listTables.Items[listTables.SelectedIndex] as ConflictInfo;
+                    if (mod != null && mod.ConflictFile != null)
+                    {
+                        Process.Start(pfmFile, "\"" + mod.ConflictFile + "\"");
+                    }
+                    else if (mod != null && mod.File != null)
+                    {
+                        Process.Start(pfmFile, "\"" + mod.File + "\"");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("请设置PFM的路径");
+                }
+            }
+        }
+
+        private void 用RPFM打开ToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            if (listTables.SelectedIndex >= 0)
+            {
+                if (rpfmFile != null && rpfmFile.Length > 0)
+                {
+                    ConflictInfo mod = listTables.Items[listTables.SelectedIndex] as ConflictInfo;
+                    if (mod != null && mod.ConflictFile != null)
+                    {
+                        Process.Start(rpfmFile, "\"" + mod.ConflictFile + "\"");
+                    }
+                    else if (mod != null && mod.File != null)
+                    {
+                        Process.Start(rpfmFile, "\"" + mod.ConflictFile + "\"");
+                    }
+                }
+                else
+                {
+                    MessageBox.Show("请设置RPFM的路径");
+                }
+            }
+        }
+
+        private void 打开文件夹ToolStripMenuItem1_Click(object sender, EventArgs e)
+        {
+            if (listTables.SelectedIndex >= 0)
+            {
+                ConflictInfo mod = listTables.Items[listTables.SelectedIndex] as ConflictInfo;
+                if (mod != null && mod.ConflictFile != null)
+                {
+                    ExplorerFile(mod.ConflictFile);
+                }
+                else if (mod != null && mod.File != null)
+                {
+                    ExplorerFile(mod.File);
+                }
+            }
+        }
     }
 }

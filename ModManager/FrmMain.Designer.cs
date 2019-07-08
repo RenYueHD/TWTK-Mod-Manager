@@ -28,6 +28,7 @@
         /// </summary>
         private void InitializeComponent()
         {
+            this.components = new System.ComponentModel.Container();
             System.ComponentModel.ComponentResourceManager resources = new System.ComponentModel.ComponentResourceManager(typeof(FrmMain));
             this.folderBrowserDialog1 = new System.Windows.Forms.FolderBrowserDialog();
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
@@ -37,9 +38,21 @@
             this.选项ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiCheckLine = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiWorkshop = new System.Windows.Forms.ToolStripMenuItem();
+            this.设置PFM路径ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.设置RPFM路径ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.listMods = new System.Windows.Forms.ListBox();
             this.listTables = new System.Windows.Forms.ListBox();
+            this.ctxLeft = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.pFMToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.用RPFM打开ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.打开文件夹ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.ctxRight = new System.Windows.Forms.ContextMenuStrip(this.components);
+            this.用PFM打开ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
+            this.用RPFM打开ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.打开文件夹ToolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
+            this.ctxLeft.SuspendLayout();
+            this.ctxRight.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -80,7 +93,9 @@
             // 
             this.选项ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tsmiCheckLine,
-            this.tsmiWorkshop});
+            this.tsmiWorkshop,
+            this.设置PFM路径ToolStripMenuItem,
+            this.设置RPFM路径ToolStripMenuItem});
             this.选项ToolStripMenuItem.Name = "选项ToolStripMenuItem";
             this.选项ToolStripMenuItem.Size = new System.Drawing.Size(44, 21);
             this.选项ToolStripMenuItem.Text = "选项";
@@ -100,10 +115,24 @@
             this.tsmiWorkshop.Text = "设置创意工坊目录";
             this.tsmiWorkshop.Click += new System.EventHandler(this.tsmiWorkshop_Click);
             // 
+            // 设置PFM路径ToolStripMenuItem
+            // 
+            this.设置PFM路径ToolStripMenuItem.Name = "设置PFM路径ToolStripMenuItem";
+            this.设置PFM路径ToolStripMenuItem.Size = new System.Drawing.Size(172, 22);
+            this.设置PFM路径ToolStripMenuItem.Text = "设置PFM路径";
+            this.设置PFM路径ToolStripMenuItem.Click += new System.EventHandler(this.设置PFM路径ToolStripMenuItem_Click);
+            // 
+            // 设置RPFM路径ToolStripMenuItem
+            // 
+            this.设置RPFM路径ToolStripMenuItem.Name = "设置RPFM路径ToolStripMenuItem";
+            this.设置RPFM路径ToolStripMenuItem.Size = new System.Drawing.Size(172, 22);
+            this.设置RPFM路径ToolStripMenuItem.Text = "设置RPFM路径";
+            this.设置RPFM路径ToolStripMenuItem.Click += new System.EventHandler(this.设置RPFM路径ToolStripMenuItem_Click);
+            // 
             // listMods
             // 
             this.listMods.Dock = System.Windows.Forms.DockStyle.Left;
-            this.listMods.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+            this.listMods.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             this.listMods.FormattingEnabled = true;
             this.listMods.Location = new System.Drawing.Point(0, 25);
             this.listMods.Name = "listMods";
@@ -111,11 +140,13 @@
             this.listMods.TabIndex = 3;
             this.listMods.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listMods_DrawItem);
             this.listMods.SelectedIndexChanged += new System.EventHandler(this.listMods_SelectedIndexChanged);
+            this.listMods.DoubleClick += new System.EventHandler(this.listMods_DoubleClick);
+            this.listMods.MouseDown += new System.Windows.Forms.MouseEventHandler(this.listMods_MouseDown);
             // 
             // listTables
             // 
             this.listTables.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.listTables.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawFixed;
+            this.listTables.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             this.listTables.FormattingEnabled = true;
             this.listTables.HorizontalExtent = 1200;
             this.listTables.HorizontalScrollbar = true;
@@ -126,6 +157,68 @@
             this.listTables.Size = new System.Drawing.Size(839, 557);
             this.listTables.TabIndex = 4;
             this.listTables.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listTables_DrawItem);
+            this.listTables.DoubleClick += new System.EventHandler(this.listTables_DoubleClick);
+            this.listTables.MouseDown += new System.Windows.Forms.MouseEventHandler(this.listTables_MouseDown);
+            // 
+            // ctxLeft
+            // 
+            this.ctxLeft.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.pFMToolStripMenuItem,
+            this.用RPFM打开ToolStripMenuItem,
+            this.打开文件夹ToolStripMenuItem});
+            this.ctxLeft.Name = "ctxLeft";
+            this.ctxLeft.Size = new System.Drawing.Size(146, 70);
+            // 
+            // pFMToolStripMenuItem
+            // 
+            this.pFMToolStripMenuItem.Name = "pFMToolStripMenuItem";
+            this.pFMToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
+            this.pFMToolStripMenuItem.Text = "用PFM打开";
+            this.pFMToolStripMenuItem.Click += new System.EventHandler(this.pFMToolStripMenuItem_Click);
+            // 
+            // 用RPFM打开ToolStripMenuItem
+            // 
+            this.用RPFM打开ToolStripMenuItem.Name = "用RPFM打开ToolStripMenuItem";
+            this.用RPFM打开ToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
+            this.用RPFM打开ToolStripMenuItem.Text = "用RPFM打开";
+            this.用RPFM打开ToolStripMenuItem.Click += new System.EventHandler(this.用RPFM打开ToolStripMenuItem_Click);
+            // 
+            // 打开文件夹ToolStripMenuItem
+            // 
+            this.打开文件夹ToolStripMenuItem.Name = "打开文件夹ToolStripMenuItem";
+            this.打开文件夹ToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
+            this.打开文件夹ToolStripMenuItem.Text = "打开文件夹";
+            this.打开文件夹ToolStripMenuItem.Click += new System.EventHandler(this.打开文件夹ToolStripMenuItem_Click);
+            // 
+            // ctxRight
+            // 
+            this.ctxRight.Items.AddRange(new System.Windows.Forms.ToolStripItem[] {
+            this.用PFM打开ToolStripMenuItem,
+            this.用RPFM打开ToolStripMenuItem1,
+            this.打开文件夹ToolStripMenuItem1});
+            this.ctxRight.Name = "ctxRight";
+            this.ctxRight.Size = new System.Drawing.Size(146, 70);
+            // 
+            // 用PFM打开ToolStripMenuItem
+            // 
+            this.用PFM打开ToolStripMenuItem.Name = "用PFM打开ToolStripMenuItem";
+            this.用PFM打开ToolStripMenuItem.Size = new System.Drawing.Size(145, 22);
+            this.用PFM打开ToolStripMenuItem.Text = "用PFM打开";
+            this.用PFM打开ToolStripMenuItem.Click += new System.EventHandler(this.用PFM打开ToolStripMenuItem_Click);
+            // 
+            // 用RPFM打开ToolStripMenuItem1
+            // 
+            this.用RPFM打开ToolStripMenuItem1.Name = "用RPFM打开ToolStripMenuItem1";
+            this.用RPFM打开ToolStripMenuItem1.Size = new System.Drawing.Size(145, 22);
+            this.用RPFM打开ToolStripMenuItem1.Text = "用RPFM打开";
+            this.用RPFM打开ToolStripMenuItem1.Click += new System.EventHandler(this.用RPFM打开ToolStripMenuItem1_Click);
+            // 
+            // 打开文件夹ToolStripMenuItem1
+            // 
+            this.打开文件夹ToolStripMenuItem1.Name = "打开文件夹ToolStripMenuItem1";
+            this.打开文件夹ToolStripMenuItem1.Size = new System.Drawing.Size(145, 22);
+            this.打开文件夹ToolStripMenuItem1.Text = "打开文件夹";
+            this.打开文件夹ToolStripMenuItem1.Click += new System.EventHandler(this.打开文件夹ToolStripMenuItem1_Click);
             // 
             // FrmMain
             // 
@@ -140,10 +233,12 @@
             this.MinimumSize = new System.Drawing.Size(800, 600);
             this.Name = "FrmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Mod管理器 v0.5 - Power by RenYueHD";
+            this.Text = "Mod管理器 v0.6 - Power by RenYueHD";
             this.Load += new System.EventHandler(this.FrmMain_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
+            this.ctxLeft.ResumeLayout(false);
+            this.ctxRight.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -160,6 +255,16 @@
         private System.Windows.Forms.ToolStripMenuItem 选项ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem tsmiCheckLine;
         private System.Windows.Forms.ToolStripMenuItem tsmiWorkshop;
+        private System.Windows.Forms.ContextMenuStrip ctxLeft;
+        private System.Windows.Forms.ToolStripMenuItem 打开文件夹ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem pFMToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 设置PFM路径ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 设置RPFM路径ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 用RPFM打开ToolStripMenuItem;
+        private System.Windows.Forms.ContextMenuStrip ctxRight;
+        private System.Windows.Forms.ToolStripMenuItem 用PFM打开ToolStripMenuItem;
+        private System.Windows.Forms.ToolStripMenuItem 用RPFM打开ToolStripMenuItem1;
+        private System.Windows.Forms.ToolStripMenuItem 打开文件夹ToolStripMenuItem1;
     }
 }
 

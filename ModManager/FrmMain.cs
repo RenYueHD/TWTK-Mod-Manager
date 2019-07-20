@@ -63,7 +63,10 @@ namespace ModManager
         private void FrmMain_Load(object sender, EventArgs e)
         {
             //加载创意工坊Mod配置
-            workShopConfigFile = Directory.GetFiles(launchDir, "*-moddata.dat").FirstOrDefault();
+            if (Directory.Exists(launchDir))
+            {
+                workShopConfigFile = Directory.GetFiles(launchDir, "*-moddata.dat").FirstOrDefault();
+            }
 
             DBTypeMap.Instance.InitializeTypeMap(Path.GetDirectoryName(Application.ExecutablePath));
 
@@ -136,7 +139,7 @@ namespace ModManager
                 }
             }
 
-            if (workShopConfigFile != null)
+            if (workShopConfigFile != null && File.Exists(workShopConfigFile))
             {
                 string root = null;
                 using (StreamReader sr = new StreamReader(workShopConfigFile))
@@ -262,10 +265,7 @@ namespace ModManager
         {
             lock (this)
             {
-                if (currentDir == null || currentDir.Length == 0)
-                {
-                    return;
-                }
+
                 tableFile.Clear();
                 fileTables.Clear();
                 listMods.Items.Clear();
@@ -274,13 +274,18 @@ namespace ModManager
                 fileFields.Clear();
                 fieldFiles.Clear();
 
+                if (currentDir == null || currentDir.Length == 0 || !Directory.Exists(currentDir))
+                {
+                    return;
+                }
+
                 //读取所有pack文件
                 List<FileInfo> files = new DirectoryInfo(currentDir).GetFiles("*.pack").ToList();
 
                 List<WorkshopInfo> workShopInfos = new List<WorkshopInfo>();
 
                 //加载创意工坊配置
-                if (workShopConfigFile != null && workShopConfigFile.Length > 0)
+                if (workShopConfigFile != null && workShopConfigFile.Length > 0 && File.Exists(workShopConfigFile))
                 {
                     using (StreamReader sr = new StreamReader(workShopConfigFile))
                     {

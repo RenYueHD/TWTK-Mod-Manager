@@ -30,5 +30,10 @@ namespace ModManager
         /// 词条冲突
         /// </summary>
         public bool ConflictField { get; set; }
+
+        /// <summary>
+        /// 创意工坊信息
+        /// </summary>
+        public WorkshopInfo WorkshopInfo { get; set; }
     }
 }

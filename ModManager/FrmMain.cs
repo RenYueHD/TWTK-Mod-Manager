@@ -1,5 +1,6 @@
 ﻿using Common;
 using Filetypes;
+using Newtonsoft.Json;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -11,6 +12,7 @@ using System.IO;
 using System.Linq;
 using System.Runtime.InteropServices;
 using System.Text;
+using System.Threading;
 using System.Windows.Forms;
 
 namespace ModManager
@@ -26,6 +28,10 @@ namespace ModManager
 
         [DllImport("shell32.dll", ExactSpelling = true)]
         private static extern int SHOpenFolderAndSelectItems(IntPtr pidlList, uint cild, IntPtr children, uint dwFlags);
+
+        private static string launchDir = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData) + "\\The Creative Assembly\\Launcher";
+
+        private static string workShopConfigFile;
 
         public FrmMain()
         {
@@ -43,6 +49,7 @@ namespace ModManager
 
         FileSystemWatcher watcher = new FileSystemWatcher();
         FileSystemWatcher workshopWatcher = new FileSystemWatcher();
+        FileSystemWatcher workshopConfigWatcher = new FileSystemWatcher();
 
         //记录所有表对应文件 <表,表所在文件列表>
         Dictionary<string, List<string>> tableFile = new Dictionary<string, List<string>>();
@@ -55,6 +62,9 @@ namespace ModManager
 
         private void FrmMain_Load(object sender, EventArgs e)
         {
+            //加载创意工坊Mod配置
+            workShopConfigFile = Directory.GetFiles(launchDir, "*-moddata.dat").FirstOrDefault();
+
             DBTypeMap.Instance.InitializeTypeMap(Path.GetDirectoryName(Application.ExecutablePath));
 
             watcher.Filter = "*.pack";
@@ -70,6 +80,18 @@ namespace ModManager
             workshopWatcher.Created += Watcher_Event;
             workshopWatcher.Deleted += Watcher_Event;
             workshopWatcher.IncludeSubdirectories = true;
+
+            workshopConfigWatcher.Filter = "*-moddata.dat";
+            workshopConfigWatcher.IncludeSubdirectories = false;
+
+            if (workShopConfigFile != null)
+            {
+                workshopConfigWatcher.Renamed += Watcher_Event;
+                workshopConfigWatcher.Changed += Watcher_Event;
+                workshopConfigWatcher.Created += Watcher_Event;
+                workshopConfigWatcher.Deleted += Watcher_Event;
+                workshopConfigWatcher.IncludeSubdirectories = false;
+            }
 
             Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
             if (config.AppSettings.Settings["pfm"] != null)
@@ -87,6 +109,18 @@ namespace ModManager
             else
             {
                 tsmiCheckLine.Checked = true;
+                config.AppSettings.Settings.Add("checkField", "1");
+                config.Save();
+            }
+            if (config.AppSettings.Settings["ignoreUnactive"] != null)
+            {
+                tsmiIgnoreUnActive.Checked = config.AppSettings.Settings["ignoreUnactive"].Value != "0";
+            }
+            else
+            {
+                tsmiIgnoreUnActive.Checked = true;
+                config.AppSettings.Settings.Add("ignoreUnactive", "1");
+                config.Save();
             }
             if (config.AppSettings.Settings["path"] != null)
             {
@@ -101,11 +135,64 @@ namespace ModManager
                     this.workshopDir = null;
                 }
             }
+
+            if (workShopConfigFile != null)
+            {
+                string root = null;
+                using (StreamReader sr = new StreamReader(workShopConfigFile))
+                {
+                    List<WorkshopInfo> workShopInfos = JsonConvert.DeserializeObject<List<WorkshopInfo>>(sr.ReadToEnd());
+                    if (workShopInfos.Count > 0)
+                    {
+                        string packageFile = workShopInfos[0].Packfile;
+                        if (packageFile != null)
+                        {
+                            packageFile = Path.GetFullPath(packageFile);
+                            int idx = Path.GetFullPath(workShopInfos[0].Packfile).ToLower().IndexOf("steamapps");
+                            root = packageFile.Substring(0, idx + 9);
+                        }
+                    }
+                }
+                if (root != null)
+                {
+                    //尝试自动检测创意工坊目录
+                    if (workshopDir == null)
+                    {
+                        workshopDir = root;
+                        if (config.AppSettings.Settings["workshop"] == null)
+                        {
+                            config.AppSettings.Settings.Add("workshop", null);
+                        }
+                        config.AppSettings.Settings["workshop"].Value = workshopDir;
+                        config.Save();
+                    }
+                    //尝试自动检测游戏目录
+                    if (currentDir == null)
+                    {
+                        currentDir = root + @"\common\Total War THREE KINGDOMS\data";
+                        if (config.AppSettings.Settings["path"] == null)
+                        {
+                            config.AppSettings.Settings.Add("path", null);
+                        }
+                        config.AppSettings.Settings["path"].Value = currentDir;
+                        config.Save();
+                    }
+                }
+            }
             loadDir();
         }
 
         private void Watcher_Event(object sender, FileSystemEventArgs e)
         {
+            Thread td = new Thread(rl);
+
+            td.IsBackground = true;
+            td.Start();
+        }
+
+        public void rl()
+        {
+            Thread.Sleep(500);
             Action d = () =>
             {
                 loadDir();
@@ -150,7 +237,7 @@ namespace ModManager
 
             if (dialog.ShowDialog() == DialogResult.OK)
             {
-                if (dialog.SelectedPath.EndsWith("steamapps"))
+                if (dialog.SelectedPath.ToLower().EndsWith("steamapps"))
                 {
 
                     if (config.AppSettings.Settings["workshop"] == null)
@@ -182,12 +269,24 @@ namespace ModManager
                 tableFile.Clear();
                 fileTables.Clear();
                 listMods.Items.Clear();
+                listWorkShop.Items.Clear();
                 listTables.Items.Clear();
                 fileFields.Clear();
                 fieldFiles.Clear();
 
                 //读取所有pack文件
                 List<FileInfo> files = new DirectoryInfo(currentDir).GetFiles("*.pack").ToList();
+
+                List<WorkshopInfo> workShopInfos = new List<WorkshopInfo>();
+
+                //加载创意工坊配置
+                if (workShopConfigFile != null && workShopConfigFile.Length > 0)
+                {
+                    using (StreamReader sr = new StreamReader(workShopConfigFile))
+                    {
+                        workShopInfos = JsonConvert.DeserializeObject<List<WorkshopInfo>>(sr.ReadToEnd());
+                    }
+                }
 
                 //加载创意工坊pack文件
                 if (workshopDir != null && workshopDir.Length > 0)
@@ -223,44 +322,56 @@ namespace ModManager
                 files = files.Where(p => !exp.Contains(p.Name)).OrderBy(p => p.Name).ToList();
                 files.ForEach(file =>
                 {
-                    List<PackedFile> packageFile = ReadPackageFile(file.FullName);
-                    //填充文件-目录数据
-                    fileTables.Add(file.FullName, packageFile.Select(pkg => pkg.FullPath).ToList());
-                    fileFields[file.FullName] = new List<ModLine>();
-
-                    packageFile.ForEach(p =>
+                    WorkshopInfo wk = workShopInfos.Find(p => Path.GetFullPath(p.Packfile) == Path.GetFullPath(file.FullName));
+                    if (wk == null || wk.Active || !tsmiIgnoreUnActive.Checked)
                     {
-                        //填充目录-文件数据
-                        if (!tableFile.ContainsKey(p.FullPath))
-                        {
-                            tableFile[p.FullPath] = new List<string>();
-                        }
-                        List<string> list = tableFile[p.FullPath];
-                        list.Add(file.FullName);
 
-                        if (tsmiCheckLine.Checked)
-                        {
-                            //填充文件-词条数据
-                            List<ModLine> lines = ReadPackedField(p, file.FullName);
+                        List<PackedFile> packageFile = ReadPackageFile(file.FullName);
+                        //填充文件-目录数据
+                        fileTables.Add(file.FullName, packageFile.Select(pkg => pkg.FullPath).ToList());
+                        fileFields[file.FullName] = new List<ModLine>();
 
-                            List<ModLine> fields = fileFields[file.FullName];
-                            fields.AddRange(lines);
 
-                            //填充词条-文件数据
-                            lines.ForEach(line =>
+                        packageFile.ForEach(p =>
+                            {
+                                //填充目录-文件数据
+                                if (!tableFile.ContainsKey(p.FullPath))
                                 {
-                                    string key = line.TableName + "." + string.Join(".", line.FieldKeyValue);
-                                    if (!fieldFiles.ContainsKey(key))
-                                    {
-                                        fieldFiles[key] = new List<string>();
-                                    }
-                                    List<string> fs = fieldFiles[key];
-                                    fs.Add(file.FullName);
-                                });
-                        }
-                    });
-                });
+                                    tableFile[p.FullPath] = new List<string>();
+                                }
 
+                                List<string> list = tableFile[p.FullPath];
+                                list.Add(file.FullName);
+
+                                if (tsmiCheckLine.Checked)
+                                {
+                                    //填充文件-词条数据
+                                    List<ModLine> lines = ReadPackedField(p, file.FullName);
+
+                                    List<ModLine> fields = fileFields[file.FullName];
+                                    fields.AddRange(lines);
+
+                                    //填充词条-文件数据
+                                    lines.ForEach(line =>
+                                                {
+                                                    string key = line.TableName + "." + string.Join(".", line.FieldKeyValue);
+                                                    if (!fieldFiles.ContainsKey(key))
+                                                    {
+                                                        fieldFiles[key] = new List<string>();
+                                                    }
+                                                    List<string> fs = fieldFiles[key];
+                                                    fs.Add(file.FullName);
+                                                });
+                                }
+                            });
+                    }
+                    else
+                    {
+                        //填充文件-目录数据
+                        fileTables.Add(file.FullName, new List<string>());
+                        fileFields[file.FullName] = new List<ModLine>();
+                    }
+                });
 
                 //填充左侧Mod目录
                 foreach (FileInfo file in files)
@@ -268,30 +379,45 @@ namespace ModManager
                     ModFile mod = new ModFile();
                     mod.FileName = file.FullName;
                     mod.Name = Path.GetFileNameWithoutExtension(file.FullName);
-                    //判断是否冲突
-                    foreach (string table in fileTables[file.FullName])
+
+                    //判断是否为创意工坊
+                    mod.WorkshopInfo = workShopInfos.Find(p => Path.GetFullPath(p.Packfile) == Path.GetFullPath(file.FullName));
+
+                    if (mod.WorkshopInfo == null || mod.WorkshopInfo.Active || !tsmiIgnoreUnActive.Checked)
                     {
-                        if (tableFile[table].Count(p => p != file.FullName) > 0)
+                        //判断是否冲突
+                        foreach (string table in fileTables[file.FullName])
                         {
-                            mod.ConflictTable = true;
-                            break;
-                        }
-                    }
-                    if (tsmiCheckLine.Checked)
-                    {
-                        //如果目录无冲突,则判断词条冲突情况
-                        List<ModLine> lines = fileFields[mod.FileName];
-                        foreach (ModLine l in lines)
-                        {
-                            if (fieldFiles[l.TableName + "." + string.Join(".", l.FieldKeyValue)].Count(p => p != file.FullName) > 0)
+                            if (tableFile[table].Count(p => p != file.FullName) > 0)
                             {
-                                mod.ConflictField = true;
+                                mod.ConflictTable = true;
                                 break;
+                            }
+                        }
+                        if (tsmiCheckLine.Checked)
+                        {
+                            //如果目录无冲突,则判断词条冲突情况
+                            List<ModLine> lines = fileFields[mod.FileName];
+                            foreach (ModLine l in lines)
+                            {
+                                if (fieldFiles[l.TableName + "." + string.Join(".", l.FieldKeyValue)].Count(p => p != file.FullName) > 0)
+                                {
+                                    mod.ConflictField = true;
+                                    break;
+                                }
                             }
                         }
                     }
 
-                    listMods.Items.Add(mod);
+
+                    if (mod.WorkshopInfo != null)
+                    {
+                        listWorkShop.Items.Add(mod);
+                    }
+                    else
+                    {
+                        listMods.Items.Add(mod);
+                    }
                 }
 
                 watcher.Path = currentDir;
@@ -302,6 +428,12 @@ namespace ModManager
                     string tmp = workshopDir + @"\workshop\content\779340";
                     workshopWatcher.Path = tmp;
                     workshopWatcher.EnableRaisingEvents = true;
+                }
+
+                if (workShopConfigFile != null && workShopConfigFile.Length > 0)
+                {
+                    workshopConfigWatcher.Path = launchDir;
+                    workshopConfigWatcher.EnableRaisingEvents = true;
                 }
             }
         }
@@ -396,13 +528,38 @@ namespace ModManager
             }
         }
 
+        private void listWorkShop_DrawItem(object sender, DrawItemEventArgs e)
+        {
+            if (e.Index >= 0)
+            {
+                e.DrawBackground();
+
+                ModFile file = (sender as ListBox).Items[e.Index] as ModFile;
+
+                Brush mybsh = Brushes.Black;
+                // 焦点框
+                e.DrawFocusRectangle();
+                if (file.ConflictTable)
+                {
+                    mybsh = Brushes.Red;
+                }
+                else if (file.ConflictField)
+                {
+                    mybsh = Brushes.Orange;
+                }
+
+                //文本 
+                e.Graphics.DrawString((file.WorkshopInfo.Active ? "" : "(未激活)") + file.WorkshopInfo.Name, e.Font, mybsh, e.Bounds, StringFormat.GenericDefault);
+            }
+        }
 
         private void listMods_SelectedIndexChanged(object sender, EventArgs e)
         {
             listTables.Items.Clear();
-            if (listMods.SelectedIndex >= 0)
+            ListBox list = sender as ListBox;
+            if (list.SelectedIndex >= 0)
             {
-                ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
+                ModFile mod = list.Items[list.SelectedIndex] as ModFile;
 
                 listTables.Items.Add("文件:   " + mod.FileName);
                 listTables.Items.Add("");
@@ -506,26 +663,17 @@ namespace ModManager
 
         private void tsmiCheckLine_CheckedChanged(object sender, EventArgs e)
         {
-            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
-            if (config.AppSettings.Settings["checkField"] != null)
-            {
-                config.AppSettings.Settings["checkField"].Value = (tsmiCheckLine.Checked ? "1" : "0");
-            }
-            else
-            {
-                config.AppSettings.Settings.Add("checkField", tsmiCheckLine.Checked ? "1" : "0");
-            }
-            config.Save();
 
-            loadDir();
 
         }
 
         private void listMods_DoubleClick(object sender, EventArgs e)
         {
-            if (listMods.SelectedIndex >= 0)
+            ListBox list = sender as ListBox;
+
+            if (list.SelectedIndex >= 0)
             {
-                ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
+                ModFile mod = list.Items[list.SelectedIndex] as ModFile;
                 ExplorerFile(mod.FileName);
             }
         }
@@ -534,58 +682,46 @@ namespace ModManager
         {
             if (e.Button == MouseButtons.Right)
             {
-
-                int index = listMods.IndexFromPoint(e.Location);
-                if (index >= 0)
+                ListBox list = sender as ListBox;
+                int index = list.IndexFromPoint(e.Location);
+                if (index >= 0 && index != 65535)
                 {
-                    listMods.SelectedIndex = index;
-
-                    ctxLeft.Show(listMods, e.Location);
+                    list.SelectedIndex = index;
+                    ctxMenu.Tag = (list.Items[list.SelectedIndex] as ModFile).FileName;
+                    ctxMenu.Show(list, e.Location);
                 }
             }
         }
 
         private void pFMToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listMods.SelectedIndex >= 0)
+            if (pfmFile != null && pfmFile.Length > 0)
             {
-                if (pfmFile != null && pfmFile.Length > 0)
-                {
-                    ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
-                    Process.Start(pfmFile, "\"" + mod.FileName + "\"");
-                }
-                else
-                {
-                    MessageBox.Show("请设置PFM的路径");
-                }
+                Process.Start(pfmFile, "\"" + (sender as ToolStripMenuItem).GetCurrentParent().Tag + "\"");
             }
+            else
+            {
+                MessageBox.Show("请设置PFM的路径");
+            }
+
         }
 
         private void 用RPFM打开ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listMods.SelectedIndex >= 0)
+            if (rpfmFile != null && rpfmFile.Length > 0)
             {
-                if (rpfmFile != null && rpfmFile.Length > 0)
-                {
-                    ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
-                    Process.Start(rpfmFile, "\"" + mod.FileName + "\"");
-                }
-                else
-                {
-                    MessageBox.Show("请设置RPFM的路径");
-                }
+                Process.Start(rpfmFile, "\"" + (sender as ToolStripMenuItem).GetCurrentParent().Tag + "\"");
+            }
+            else
+            {
+                MessageBox.Show("请设置RPFM的路径");
             }
         }
 
         private void 打开文件夹ToolStripMenuItem_Click(object sender, EventArgs e)
         {
-            if (listMods.SelectedIndex >= 0)
-            {
-                ModFile mod = listMods.Items[listMods.SelectedIndex] as ModFile;
-                ExplorerFile(mod.FileName);
-            }
+            ExplorerFile((sender as ToolStripMenuItem).GetCurrentParent().Tag.ToString());
         }
-
 
 
         private void 设置PFM路径ToolStripMenuItem_Click(object sender, EventArgs e)
@@ -692,15 +828,15 @@ namespace ModManager
         {
             if (e.Button == MouseButtons.Right)
             {
-
                 int index = listTables.IndexFromPoint(e.Location);
-                if (index >= 0)
+                if (index >= 0 && index != 65535)
                 {
                     listTables.SelectedIndex = index;
                     ConflictInfo mod = listTables.Items[listTables.SelectedIndex] as ConflictInfo;
                     if (mod != null)
                     {
-                        ctxRight.Show(listTables, e.Location);
+                        ctxMenu.Tag = mod.ConflictFile ?? mod.File;
+                        ctxMenu.Show(listTables, e.Location);
                     }
                 }
             }
@@ -766,6 +902,43 @@ namespace ModManager
                     ExplorerFile(mod.File);
                 }
             }
+        }
+
+        private void tsmiIrgnoreUnActive_CheckedChanged(object sender, EventArgs e)
+        {
+
+        }
+
+        private void tsmiCheckLine_Click(object sender, EventArgs e)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["checkField"] != null)
+            {
+                config.AppSettings.Settings["checkField"].Value = (tsmiCheckLine.Checked ? "1" : "0");
+            }
+            else
+            {
+                config.AppSettings.Settings.Add("checkField", tsmiCheckLine.Checked ? "1" : "0");
+            }
+            config.Save();
+
+            loadDir();
+        }
+
+        private void tsmiIgnoreUnActive_Click(object sender, EventArgs e)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["ignoreUnactive"] != null)
+            {
+                config.AppSettings.Settings["ignoreUnactive"].Value = (tsmiIgnoreUnActive.Checked ? "1" : "0");
+            }
+            else
+            {
+                config.AppSettings.Settings.Add("ignoreUnactive", tsmiIgnoreUnActive.Checked ? "1" : "0");
+            }
+            config.Save();
+
+            loadDir();
         }
     }
 }

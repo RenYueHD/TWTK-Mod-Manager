@@ -34,6 +34,7 @@
             this.menuStrip1 = new System.Windows.Forms.MenuStrip();
             this.文件ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.loadRoot = new System.Windows.Forms.ToolStripMenuItem();
+            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiReload = new System.Windows.Forms.ToolStripMenuItem();
             this.选项ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.tsmiCheckLine = new System.Windows.Forms.ToolStripMenuItem();
@@ -46,14 +47,20 @@
             this.pFMToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.用RPFM打开ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
             this.打开文件夹ToolStripMenuItem = new System.Windows.Forms.ToolStripMenuItem();
-            this.panel1 = new System.Windows.Forms.Panel();
             this.listWorkShop = new System.Windows.Forms.ListBox();
-            this.panel2 = new System.Windows.Forms.Panel();
-            this.toolStripMenuItem1 = new System.Windows.Forms.ToolStripMenuItem();
+            this.splitContainer1 = new System.Windows.Forms.SplitContainer();
+            this.splitContainer2 = new System.Windows.Forms.SplitContainer();
+            this.tsmiHideNormal = new System.Windows.Forms.ToolStripMenuItem();
             this.menuStrip1.SuspendLayout();
             this.ctxMenu.SuspendLayout();
-            this.panel1.SuspendLayout();
-            this.panel2.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).BeginInit();
+            this.splitContainer1.Panel1.SuspendLayout();
+            this.splitContainer1.Panel2.SuspendLayout();
+            this.splitContainer1.SuspendLayout();
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).BeginInit();
+            this.splitContainer2.Panel1.SuspendLayout();
+            this.splitContainer2.Panel2.SuspendLayout();
+            this.splitContainer2.SuspendLayout();
             this.SuspendLayout();
             // 
             // menuStrip1
@@ -63,7 +70,7 @@
             this.选项ToolStripMenuItem});
             this.menuStrip1.Location = new System.Drawing.Point(0, 0);
             this.menuStrip1.Name = "menuStrip1";
-            this.menuStrip1.Size = new System.Drawing.Size(1071, 25);
+            this.menuStrip1.Size = new System.Drawing.Size(1092, 25);
             this.menuStrip1.TabIndex = 2;
             this.menuStrip1.Text = "menuStrip1";
             // 
@@ -80,14 +87,21 @@
             // loadRoot
             // 
             this.loadRoot.Name = "loadRoot";
-            this.loadRoot.Size = new System.Drawing.Size(152, 22);
+            this.loadRoot.Size = new System.Drawing.Size(150, 22);
             this.loadRoot.Text = "打开data目录";
             this.loadRoot.Click += new System.EventHandler(this.loadRoot_Click);
+            // 
+            // toolStripMenuItem1
+            // 
+            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
+            this.toolStripMenuItem1.Size = new System.Drawing.Size(150, 22);
+            this.toolStripMenuItem1.Text = "打开创意工坊";
+            this.toolStripMenuItem1.Click += new System.EventHandler(this.tsmiWorkshop_Click);
             // 
             // tsmiReload
             // 
             this.tsmiReload.Name = "tsmiReload";
-            this.tsmiReload.Size = new System.Drawing.Size(152, 22);
+            this.tsmiReload.Size = new System.Drawing.Size(150, 22);
             this.tsmiReload.Text = "重新加载";
             this.tsmiReload.Click += new System.EventHandler(this.tsmiReload_Click);
             // 
@@ -96,6 +110,7 @@
             this.选项ToolStripMenuItem.DropDownItems.AddRange(new System.Windows.Forms.ToolStripItem[] {
             this.tsmiCheckLine,
             this.tsmiIgnoreUnActive,
+            this.tsmiHideNormal,
             this.设置PFM路径ToolStripMenuItem,
             this.设置RPFM路径ToolStripMenuItem});
             this.选项ToolStripMenuItem.Name = "选项ToolStripMenuItem";
@@ -106,7 +121,7 @@
             // 
             this.tsmiCheckLine.CheckOnClick = true;
             this.tsmiCheckLine.Name = "tsmiCheckLine";
-            this.tsmiCheckLine.Size = new System.Drawing.Size(188, 22);
+            this.tsmiCheckLine.Size = new System.Drawing.Size(189, 22);
             this.tsmiCheckLine.Text = "显示词条重复";
             this.tsmiCheckLine.Click += new System.EventHandler(this.tsmiCheckLine_Click);
             // 
@@ -114,32 +129,32 @@
             // 
             this.tsmiIgnoreUnActive.CheckOnClick = true;
             this.tsmiIgnoreUnActive.Name = "tsmiIgnoreUnActive";
-            this.tsmiIgnoreUnActive.Size = new System.Drawing.Size(188, 22);
+            this.tsmiIgnoreUnActive.Size = new System.Drawing.Size(189, 22);
             this.tsmiIgnoreUnActive.Text = "不检测未启用的Mod";
             this.tsmiIgnoreUnActive.Click += new System.EventHandler(this.tsmiIgnoreUnActive_Click);
             // 
             // 设置PFM路径ToolStripMenuItem
             // 
             this.设置PFM路径ToolStripMenuItem.Name = "设置PFM路径ToolStripMenuItem";
-            this.设置PFM路径ToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
+            this.设置PFM路径ToolStripMenuItem.Size = new System.Drawing.Size(189, 22);
             this.设置PFM路径ToolStripMenuItem.Text = "设置PFM路径";
             this.设置PFM路径ToolStripMenuItem.Click += new System.EventHandler(this.设置PFM路径ToolStripMenuItem_Click);
             // 
             // 设置RPFM路径ToolStripMenuItem
             // 
             this.设置RPFM路径ToolStripMenuItem.Name = "设置RPFM路径ToolStripMenuItem";
-            this.设置RPFM路径ToolStripMenuItem.Size = new System.Drawing.Size(188, 22);
+            this.设置RPFM路径ToolStripMenuItem.Size = new System.Drawing.Size(189, 22);
             this.设置RPFM路径ToolStripMenuItem.Text = "设置RPFM路径";
             this.设置RPFM路径ToolStripMenuItem.Click += new System.EventHandler(this.设置RPFM路径ToolStripMenuItem_Click);
             // 
             // listMods
             // 
-            this.listMods.Dock = System.Windows.Forms.DockStyle.Top;
+            this.listMods.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listMods.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             this.listMods.FormattingEnabled = true;
             this.listMods.Location = new System.Drawing.Point(0, 0);
             this.listMods.Name = "listMods";
-            this.listMods.Size = new System.Drawing.Size(209, 401);
+            this.listMods.Size = new System.Drawing.Size(209, 316);
             this.listMods.TabIndex = 3;
             this.listMods.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listMods_DrawItem);
             this.listMods.SelectedIndexChanged += new System.EventHandler(this.listMods_SelectedIndexChanged);
@@ -157,8 +172,8 @@
             this.listTables.Location = new System.Drawing.Point(0, 0);
             this.listTables.Name = "listTables";
             this.listTables.ScrollAlwaysVisible = true;
-            this.listTables.Size = new System.Drawing.Size(862, 557);
-            this.listTables.TabIndex = 4;
+            this.listTables.Size = new System.Drawing.Size(879, 571);
+            this.listTables.TabIndex = 5;
             this.listTables.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listTables_DrawItem);
             this.listTables.DoubleClick += new System.EventHandler(this.listTables_DoubleClick);
             this.listTables.MouseDown += new System.Windows.Forms.MouseEventHandler(this.listTables_MouseDown);
@@ -193,66 +208,92 @@
             this.打开文件夹ToolStripMenuItem.Text = "打开文件夹";
             this.打开文件夹ToolStripMenuItem.Click += new System.EventHandler(this.打开文件夹ToolStripMenuItem_Click);
             // 
-            // panel1
-            // 
-            this.panel1.Controls.Add(this.listWorkShop);
-            this.panel1.Controls.Add(this.listMods);
-            this.panel1.Dock = System.Windows.Forms.DockStyle.Left;
-            this.panel1.Location = new System.Drawing.Point(0, 25);
-            this.panel1.Name = "panel1";
-            this.panel1.Size = new System.Drawing.Size(209, 557);
-            this.panel1.TabIndex = 5;
-            // 
             // listWorkShop
             // 
             this.listWorkShop.Dock = System.Windows.Forms.DockStyle.Fill;
             this.listWorkShop.DrawMode = System.Windows.Forms.DrawMode.OwnerDrawVariable;
             this.listWorkShop.FormattingEnabled = true;
-            this.listWorkShop.Location = new System.Drawing.Point(0, 401);
+            this.listWorkShop.Location = new System.Drawing.Point(0, 0);
             this.listWorkShop.Name = "listWorkShop";
-            this.listWorkShop.Size = new System.Drawing.Size(209, 156);
+            this.listWorkShop.Size = new System.Drawing.Size(209, 251);
             this.listWorkShop.TabIndex = 4;
             this.listWorkShop.DrawItem += new System.Windows.Forms.DrawItemEventHandler(this.listWorkShop_DrawItem);
             this.listWorkShop.SelectedIndexChanged += new System.EventHandler(this.listMods_SelectedIndexChanged);
             this.listWorkShop.DoubleClick += new System.EventHandler(this.listMods_DoubleClick);
             this.listWorkShop.MouseDown += new System.Windows.Forms.MouseEventHandler(this.listMods_MouseDown);
             // 
-            // panel2
+            // splitContainer1
             // 
-            this.panel2.Controls.Add(this.listTables);
-            this.panel2.Dock = System.Windows.Forms.DockStyle.Fill;
-            this.panel2.Location = new System.Drawing.Point(209, 25);
-            this.panel2.Name = "panel2";
-            this.panel2.Size = new System.Drawing.Size(862, 557);
-            this.panel2.TabIndex = 6;
+            this.splitContainer1.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer1.Location = new System.Drawing.Point(0, 25);
+            this.splitContainer1.Name = "splitContainer1";
             // 
-            // toolStripMenuItem1
+            // splitContainer1.Panel1
             // 
-            this.toolStripMenuItem1.Name = "toolStripMenuItem1";
-            this.toolStripMenuItem1.Size = new System.Drawing.Size(152, 22);
-            this.toolStripMenuItem1.Text = "打开创意工坊";
-            this.toolStripMenuItem1.Click += new System.EventHandler(this.tsmiWorkshop_Click);
+            this.splitContainer1.Panel1.Controls.Add(this.splitContainer2);
+            // 
+            // splitContainer1.Panel2
+            // 
+            this.splitContainer1.Panel2.Controls.Add(this.listTables);
+            this.splitContainer1.Size = new System.Drawing.Size(1092, 571);
+            this.splitContainer1.SplitterDistance = 209;
+            this.splitContainer1.TabIndex = 5;
+            this.splitContainer1.TabStop = false;
+            this.splitContainer1.SplitterMoved += new System.Windows.Forms.SplitterEventHandler(this.splitContainer1_SplitterMoved);
+            // 
+            // splitContainer2
+            // 
+            this.splitContainer2.Dock = System.Windows.Forms.DockStyle.Fill;
+            this.splitContainer2.Location = new System.Drawing.Point(0, 0);
+            this.splitContainer2.Name = "splitContainer2";
+            this.splitContainer2.Orientation = System.Windows.Forms.Orientation.Horizontal;
+            // 
+            // splitContainer2.Panel1
+            // 
+            this.splitContainer2.Panel1.Controls.Add(this.listMods);
+            // 
+            // splitContainer2.Panel2
+            // 
+            this.splitContainer2.Panel2.Controls.Add(this.listWorkShop);
+            this.splitContainer2.Size = new System.Drawing.Size(209, 571);
+            this.splitContainer2.SplitterDistance = 316;
+            this.splitContainer2.TabIndex = 0;
+            this.splitContainer2.TabStop = false;
+            this.splitContainer2.SplitterMoved += new System.Windows.Forms.SplitterEventHandler(this.splitContainer2_SplitterMoved);
+            // 
+            // tsmiHideNormal
+            // 
+            this.tsmiHideNormal.CheckOnClick = true;
+            this.tsmiHideNormal.Name = "tsmiHideNormal";
+            this.tsmiHideNormal.Size = new System.Drawing.Size(189, 22);
+            this.tsmiHideNormal.Text = "不显示正常目录/词条";
+            this.tsmiHideNormal.Click += new System.EventHandler(this.tsmiHideNormal_Click);
             // 
             // FrmMain
             // 
             this.AutoScaleDimensions = new System.Drawing.SizeF(6F, 12F);
             this.AutoScaleMode = System.Windows.Forms.AutoScaleMode.Font;
-            this.ClientSize = new System.Drawing.Size(1071, 582);
-            this.Controls.Add(this.panel2);
-            this.Controls.Add(this.panel1);
+            this.ClientSize = new System.Drawing.Size(1092, 596);
+            this.Controls.Add(this.splitContainer1);
             this.Controls.Add(this.menuStrip1);
             this.Icon = ((System.Drawing.Icon)(resources.GetObject("$this.Icon")));
             this.MainMenuStrip = this.menuStrip1;
             this.MinimumSize = new System.Drawing.Size(800, 600);
             this.Name = "FrmMain";
             this.StartPosition = System.Windows.Forms.FormStartPosition.CenterScreen;
-            this.Text = "Mod管理器 v0.8 - Power by RenYueHD";
+            this.Text = "Mod管理器 v1.0.2 - Power by RenYueHD";
             this.Load += new System.EventHandler(this.FrmMain_Load);
             this.menuStrip1.ResumeLayout(false);
             this.menuStrip1.PerformLayout();
             this.ctxMenu.ResumeLayout(false);
-            this.panel1.ResumeLayout(false);
-            this.panel2.ResumeLayout(false);
+            this.splitContainer1.Panel1.ResumeLayout(false);
+            this.splitContainer1.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer1)).EndInit();
+            this.splitContainer1.ResumeLayout(false);
+            this.splitContainer2.Panel1.ResumeLayout(false);
+            this.splitContainer2.Panel2.ResumeLayout(false);
+            ((System.ComponentModel.ISupportInitialize)(this.splitContainer2)).EndInit();
+            this.splitContainer2.ResumeLayout(false);
             this.ResumeLayout(false);
             this.PerformLayout();
 
@@ -275,10 +316,11 @@
         private System.Windows.Forms.ToolStripMenuItem 设置RPFM路径ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem 用RPFM打开ToolStripMenuItem;
         private System.Windows.Forms.ToolStripMenuItem tsmiIgnoreUnActive;
-        private System.Windows.Forms.Panel panel1;
-        private System.Windows.Forms.Panel panel2;
         private System.Windows.Forms.ListBox listWorkShop;
         private System.Windows.Forms.ToolStripMenuItem toolStripMenuItem1;
+        private System.Windows.Forms.SplitContainer splitContainer1;
+        private System.Windows.Forms.SplitContainer splitContainer2;
+        private System.Windows.Forms.ToolStripMenuItem tsmiHideNormal;
     }
 }
 

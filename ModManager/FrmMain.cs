@@ -125,6 +125,16 @@ namespace ModManager
                 config.AppSettings.Settings.Add("ignoreUnactive", "1");
                 config.Save();
             }
+            if (config.AppSettings.Settings["hideNormal"] != null)
+            {
+                tsmiHideNormal.Checked = config.AppSettings.Settings["hideNormal"].Value != "0";
+            }
+            else
+            {
+                tsmiHideNormal.Checked = false;
+                config.AppSettings.Settings.Add("hideNormal", "0");
+                config.Save();
+            }
             if (config.AppSettings.Settings["path"] != null)
             {
                 this.currentDir = config.AppSettings.Settings["path"].Value;
@@ -139,27 +149,57 @@ namespace ModManager
                 }
             }
 
+            if (config.AppSettings.Settings["split1"] != null)
+            {
+                try
+                {
+                    splitContainer1.SplitterDistance = Convert.ToInt32(config.AppSettings.Settings["split1"].Value);
+                }
+                catch
+                {
+
+                }
+            }
+            if (config.AppSettings.Settings["split2"] != null)
+            {
+                try
+                {
+                    splitContainer2.SplitterDistance = Convert.ToInt32(config.AppSettings.Settings["split2"].Value);
+                }
+                catch
+                {
+
+                }
+            }
+
             if (workShopConfigFile != null && File.Exists(workShopConfigFile))
             {
                 string root = null;
                 using (StreamReader sr = new StreamReader(workShopConfigFile))
                 {
-                    List<WorkshopInfo> workShopInfos = JsonConvert.DeserializeObject<List<WorkshopInfo>>(sr.ReadToEnd());
-                    if (workShopInfos.Count > 0)
+                    try
                     {
-                        string packageFile = workShopInfos[0].Packfile;
-                        if (packageFile != null)
+                        List<WorkshopInfo> workShopInfos = JsonConvert.DeserializeObject<List<WorkshopInfo>>(sr.ReadToEnd());
+                        if (workShopInfos.Count > 0)
                         {
-                            packageFile = Path.GetFullPath(packageFile);
-                            int idx = Path.GetFullPath(workShopInfos[0].Packfile).ToLower().IndexOf("steamapps");
-                            root = packageFile.Substring(0, idx + 9);
+                            string packageFile = workShopInfos[0].Packfile;
+                            if (packageFile != null && packageFile.Length > 0)
+                            {
+                                packageFile = Path.GetFullPath(packageFile);
+                                int idx = Path.GetFullPath(workShopInfos[0].Packfile).ToLower().IndexOf("steamapps");
+                                root = packageFile.Substring(0, idx + 9);
+                            }
                         }
+                    }
+                    catch
+                    {
+
                     }
                 }
                 if (root != null)
                 {
                     //尝试自动检测创意工坊目录
-                    if (workshopDir == null)
+                    if (workshopDir == null || workshopDir.Length == 0)
                     {
                         workshopDir = root;
                         if (config.AppSettings.Settings["workshop"] == null)
@@ -170,7 +210,7 @@ namespace ModManager
                         config.Save();
                     }
                     //尝试自动检测游戏目录
-                    if (currentDir == null)
+                    if (currentDir == null || currentDir.Length == 0)
                     {
                         currentDir = root + @"\common\Total War THREE KINGDOMS\data";
                         if (config.AppSettings.Settings["path"] == null)
@@ -185,23 +225,28 @@ namespace ModManager
             loadDir();
         }
 
+        private System.Threading.Timer timer;
+
         private void Watcher_Event(object sender, FileSystemEventArgs e)
         {
-            Thread td = new Thread(rl);
-
-            td.IsBackground = true;
-            td.Start();
-        }
-
-        public void rl()
-        {
-            Thread.Sleep(500);
-            Action d = () =>
+            lock (this)
             {
-                loadDir();
-            };
-            this.Invoke(d);
+                if (timer == null)
+                {
+                    timer = new System.Threading.Timer(p =>
+                    {
+                        Action d = () =>
+                        {
+                            loadDir();
+                            timer.Dispose();
+                            timer = null;
+                        };
+                        this.Invoke(d);
+                    }, null, 800, 999999999);
+                }
+            }
         }
+
 
         private void loadRoot_Click(object sender, EventArgs e)
         {
@@ -287,9 +332,16 @@ namespace ModManager
                 //加载创意工坊配置
                 if (workShopConfigFile != null && workShopConfigFile.Length > 0 && File.Exists(workShopConfigFile))
                 {
-                    using (StreamReader sr = new StreamReader(workShopConfigFile))
+                    try
                     {
-                        workShopInfos = JsonConvert.DeserializeObject<List<WorkshopInfo>>(sr.ReadToEnd());
+                        using (StreamReader sr = new StreamReader(workShopConfigFile))
+                        {
+                            workShopInfos = JsonConvert.DeserializeObject<List<WorkshopInfo>>(sr.ReadToEnd());
+                        }
+                    }
+                    catch
+                    {
+
                     }
                 }
 
@@ -297,9 +349,12 @@ namespace ModManager
                 if (workshopDir != null && workshopDir.Length > 0)
                 {
                     string tmp = workshopDir + @"\workshop\content\779340";
-                    foreach (DirectoryInfo dir in new DirectoryInfo(tmp).GetDirectories())
+                    if (Directory.Exists(tmp))
                     {
-                        files.AddRange(dir.GetFiles("*.pack").ToList()); ;
+                        foreach (DirectoryInfo dir in new DirectoryInfo(tmp).GetDirectories())
+                        {
+                            files.AddRange(dir.GetFiles("*.pack").ToList()); ;
+                        }
                     }
                 }
 
@@ -327,7 +382,16 @@ namespace ModManager
                 files = files.Where(p => !exp.Contains(p.Name)).OrderBy(p => p.Name).ToList();
                 files.ForEach(file =>
                 {
-                    WorkshopInfo wk = workShopInfos.Find(p => Path.GetFullPath(p.Packfile) == Path.GetFullPath(file.FullName));
+                    WorkshopInfo wk = null;
+                    try
+                    {
+                        wk = workShopInfos.Find(p => pathEquals(p.Packfile, file.FullName));
+                    }
+                    catch (Exception e)
+                    {
+
+                    }
+
                     if (wk == null || wk.Active || !tsmiIgnoreUnActive.Checked)
                     {
 
@@ -386,7 +450,7 @@ namespace ModManager
                     mod.Name = Path.GetFileNameWithoutExtension(file.FullName);
 
                     //判断是否为创意工坊
-                    mod.WorkshopInfo = workShopInfos.Find(p => Path.GetFullPath(p.Packfile) == Path.GetFullPath(file.FullName));
+                    mod.WorkshopInfo = workShopInfos.Find(p => pathEquals(p.Packfile, file.FullName));
 
                     if (mod.WorkshopInfo == null || mod.WorkshopInfo.Active || !tsmiIgnoreUnActive.Checked)
                     {
@@ -431,11 +495,14 @@ namespace ModManager
                 if (workshopDir != null && workshopDir.Length > 0)
                 {
                     string tmp = workshopDir + @"\workshop\content\779340";
-                    workshopWatcher.Path = tmp;
-                    workshopWatcher.EnableRaisingEvents = true;
+                    if (Directory.Exists(tmp))
+                    {
+                        workshopWatcher.Path = tmp;
+                        workshopWatcher.EnableRaisingEvents = true;
+                    }
                 }
 
-                if (workShopConfigFile != null && workShopConfigFile.Length > 0)
+                if (Directory.Exists(launchDir))
                 {
                     workshopConfigWatcher.Path = launchDir;
                     workshopConfigWatcher.EnableRaisingEvents = true;
@@ -572,14 +639,17 @@ namespace ModManager
                 //展示所有冲突的目录
                 fileTables[mod.FileName].ForEach(table =>
                 {
-                    listTables.Items.Add("目录:   " + table);
-
                     bool conf = false;
+
+                    bool withTag = false;
 
                     List<string> allFiles = tableFile[table];
                     allFiles = allFiles.Where(p => p != mod.FileName).ToList();
                     if (allFiles.Count > 0)
                     {
+                        listTables.Items.Add("目录:   " + table);
+                        withTag = true;
+
                         allFiles.ForEach(o =>
                         {
                             ConflictInfo c = new ConflictInfo();
@@ -592,28 +662,40 @@ namespace ModManager
                         conf = true;
                     }
                     //查看词条冲突情况
-                    fileFields[mod.FileName].Where(p => p.TableName == DBFile.Typename(table)).ToList().ForEach(p =>
-                        {
-                            List<string> files = fieldFiles[p.TableName + "." + string.Join(".", p.FieldKeyValue)]
-                                .Where(q => q != mod.FileName).ToList();
-                            if (files.Count > 0)
-                            {
-                                files.ForEach(q =>
-                                    {
-                                        ConflictInfo c = new ConflictInfo();
-                                        c.File = mod.FileName;
-                                        c.Table = table;
-                                        c.ConflictType = ConflictType.KEY;
-                                        c.ConflictFile = q;
-                                        c.FieldValue = p.FieldKeyValue;
-                                        c.FieldName = p.FieldKeyName;
-                                        listTables.Items.Add(c);
-                                    });
-                                conf = true;
-                            }
-                        });
-                    if (!conf)
+                    var tpeName = DBFile.Typename(table);
+                    fileFields[mod.FileName].Where(p => p.TableName == tpeName).ToList().ForEach(p =>
+                       {
+                           List<string> files = fieldFiles[p.TableName + "." + string.Join(".", p.FieldKeyValue)]
+                               .Where(q => q != mod.FileName).ToList();
+                           if (files.Count > 0)
+                           {
+                               if (!withTag)
+                               {
+                                   listTables.Items.Add("目录:   " + table);
+                                   withTag = true;
+                               }
+                               files.ForEach(q =>
+                                   {
+                                       ConflictInfo c = new ConflictInfo();
+                                       c.File = mod.FileName;
+                                       c.Table = table;
+                                       c.ConflictType = ConflictType.KEY;
+                                       c.ConflictFile = q;
+                                       c.FieldValue = p.FieldKeyValue;
+                                       c.FieldName = p.FieldKeyName;
+                                       listTables.Items.Add(c);
+                                   });
+                               conf = true;
+                           }
+                       });
+                    if (!conf && !tsmiHideNormal.Checked)
                     {
+                        if (!withTag)
+                        {
+                            listTables.Items.Add("目录:   " + table);
+                            withTag = true;
+                        }
+
                         ConflictInfo con = new ConflictInfo();
                         con.File = mod.FileName;
                         con.Table = table;
@@ -621,7 +703,10 @@ namespace ModManager
                         listTables.Items.Add(con);
                     }
 
-                    listTables.Items.Add("");
+                    if (withTag)
+                    {
+                        listTables.Items.Add("");
+                    }
                 });
 
             }
@@ -940,6 +1025,77 @@ namespace ModManager
             else
             {
                 config.AppSettings.Settings.Add("ignoreUnactive", tsmiIgnoreUnActive.Checked ? "1" : "0");
+            }
+            config.Save();
+
+            loadDir();
+        }
+
+        private void splitContainer1_SplitterMoved(object sender, SplitterEventArgs e)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["split1"] != null)
+            {
+                config.AppSettings.Settings["split1"].Value = splitContainer1.SplitterDistance.ToString();
+            }
+            else
+            {
+                config.AppSettings.Settings.Add("split1", splitContainer1.SplitterDistance.ToString());
+            }
+            config.Save();
+        }
+
+        private void splitContainer2_SplitterMoved(object sender, SplitterEventArgs e)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["split2"] != null)
+            {
+                config.AppSettings.Settings["split2"].Value = splitContainer2.SplitterDistance.ToString();
+            }
+            else
+            {
+                config.AppSettings.Settings.Add("split2", splitContainer2.SplitterDistance.ToString());
+            }
+            config.Save();
+        }
+
+        private bool pathEquals(string a, string b)
+        {
+            if (a == b)
+            {
+                return true;
+            }
+            if (a != null && b != null && a.Replace("/", @"\") == b.Replace("/", @"\"))
+            {
+                return true;
+            }
+            if (a != null && b != null)
+            {
+                try
+                {
+                    return Path.GetFullPath(a) == Path.GetFullPath(b);
+                }
+                catch
+                {
+                    return false;
+                }
+            }
+            else
+            {
+                return false;
+            }
+        }
+
+        private void tsmiHideNormal_Click(object sender, EventArgs e)
+        {
+            Configuration config = ConfigurationManager.OpenExeConfiguration(ConfigurationUserLevel.None);
+            if (config.AppSettings.Settings["hideNormal"] != null)
+            {
+                config.AppSettings.Settings["hideNormal"].Value = (tsmiHideNormal.Checked ? "1" : "0");
+            }
+            else
+            {
+                config.AppSettings.Settings.Add("hideNormal", tsmiHideNormal.Checked ? "1" : "0");
             }
             config.Save();
 
